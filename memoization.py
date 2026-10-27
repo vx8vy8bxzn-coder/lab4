@@ -1,11 +1,12 @@
 """Мемоизация результатов функции с помощью декоратора."""
 
 from functools import wraps
-from typing import Any, Callable, Dict, Tuple, TypeVar
+from typing import Any, Callable, Dict, Tuple, Type, TypeVar
 
 
 Result = TypeVar("Result")
-CacheKey = Tuple[Tuple[Any, ...], Tuple[Tuple[str, Any], ...]]
+TypedValue = Tuple[Type[Any], Any]
+CacheKey = Tuple[Tuple[TypedValue, ...], Tuple[Tuple[str, Type[Any], Any], ...]]
 
 
 def memoize(function: Callable[..., Result]) -> Callable[..., Result]:
@@ -14,7 +15,11 @@ def memoize(function: Callable[..., Result]) -> Callable[..., Result]:
 
     @wraps(function)
     def wrapper(*args: Any, **kwargs: Any) -> Result:
-        key = (args, tuple(sorted(kwargs.items())))
+        typed_args = tuple((type(value), value) for value in args)
+        typed_kwargs = tuple(
+            sorted((name, type(value), value) for name, value in kwargs.items())
+        )
+        key = (typed_args, typed_kwargs)
         try:
             hash(key)
         except TypeError as error:
